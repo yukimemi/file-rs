@@ -1,0 +1,8 @@
+[package]
+authors = ["yukimemi <yukimemi@gmail.com>"]
+name = "file-rs"
+version = "0.1.0"
+
+[dependencies]
+clap = "2.24.2"
+walkdir = "1.0.7"
