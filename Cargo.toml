@@ -1,0 +1,10 @@
+[package]
+authors = ["yukimemi <yukimemi@gmail.com>"]
+name = "gsr"
+version = "0.1.0"
+
+[dependencies]
+crossbeam = "0.3.0"
+structopt = "0.1.0"
+structopt-derive = "0.1.0"
+walkdir = "1.0.7"
