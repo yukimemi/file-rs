@@ -1,6 +1,6 @@
 [package]
 authors = ["yukimemi <yukimemi@gmail.com>"]
-name = "file-rs"
+name = "gsr"
 version = "0.1.0"
 
 [dependencies]
