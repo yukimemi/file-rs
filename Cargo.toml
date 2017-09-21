@@ -4,5 +4,6 @@ name = "gsr"
 version = "0.1.0"
 
 [dependencies]
-clap = "2.24.2"
+structopt = "0.1.0"
+structopt-derive = "0.1.0"
 walkdir = "1.0.7"

@@ -1,9 +1,25 @@
-extern crate clap;
+extern crate structopt;
+#[macro_use]
+extern crate structopt_derive;
 extern crate walkdir;
 
 use std::process::{Command, Output};
-use clap::{Arg, App};
-use walkdir::{WalkDir, DirEntry};
+use std::sync::mpsc;
+use std::thread;
+use structopt::StructOpt;
+use walkdir::{WalkDir, WalkDirIterator, DirEntry, Result};
+
+#[derive(StructOpt, Debug)]
+#[structopt(name = "example", about = "An example of StructOpt usage.")]
+struct Opt {
+    // A flag, true if used in the command line.
+    #[structopt(short = "v", long = "version", help = "Show version")]
+    version: bool,
+
+    // Needed parameter, the first on the command line.
+    #[structopt(help = "Input directory")]
+    input: String,
+}
 
 struct Gsr {
     entry: DirEntry,
@@ -11,30 +27,45 @@ struct Gsr {
 }
 
 fn main() {
-    let matches = App::new("Get all file and dir under the directory")
-        .version("1.0")
-        .author("yukimemi <yukimemi@gmail.com>")
-        .arg(
-            Arg::with_name("INPUT")
-                .help("Get under the INPUT dir info")
-                .required(true)
-                .index(1),
-        )
-        .get_matches();
+    let opt = Opt::from_args();
+    println!("{:?}", opt);
 
-    let entries = WalkDir::new(matches.value_of("INPUT").unwrap());
+    let rx = get_gitdir(opt.input);
+    rx.into_iter()
+        .map(|e| println!("{}", e.entry.path().display()))
+        .collect::<Vec<_>>();
 
-    for entry in entries.into_iter() {
-        // println!("{}", entry.unwrap().path().display());
+}
 
-        let entry = entry.unwrap();
-        let path = entry.path();
+fn get_gitdir(path: String) -> mpsc::Receiver<Gsr> {
+    let (tx, rx) = mpsc::channel::<Gsr>();
+    thread::spawn(move || {
+        let walker = WalkDir::new(path).into_iter();
+        walker
+            .map(|e| match e {
+                Ok(e) => {
+                    if e.file_name().to_str().unwrap_or("").eq(".git") {
+                        tx.send(Gsr::new(e)).unwrap();
+                    }
+                }
+                Err(e) => println!("{}", e),
+            })
+            .collect::<Vec<_>>();
+        drop(tx);
+    });
+    return rx;
+}
 
-        if path.is_dir() && path.ends_with(".git") {
-            println!("{}", path.display());
-        }
-    }
-
+fn is_gitdir(entry: &DirEntry) -> bool {
+    println!("{:?}", entry);
+    entry
+        .file_name()
+        .to_str()
+        .map(|s| {
+            println!("{}", s);
+            s.eq(".git")
+        })
+        .unwrap_or(false)
 }
 
 impl Gsr {
