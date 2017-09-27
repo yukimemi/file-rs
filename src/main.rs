@@ -24,8 +24,8 @@ struct Opt {
     input: String,
 }
 
-struct Gsr<'a> {
-    path: &'a Path,
+struct Gsr {
+    entry: DirEntry,
     status: Option<Output>,
 }
 
@@ -41,10 +41,8 @@ fn main() {
 
 }
 
-// fn get_gitdir<'a>(path: String) -> mpsc::Receiver<Gsr<'a>> {
-fn get_gitdir<'a>(path: String) -> mpsc::Receiver<&'a Path> {
-    // let (tx, rx) = mpsc::channel::<Gsr<'a>>();
-    let (tx, rx) = mpsc::channel::<&'a Path>();
+fn get_gitdir(path: String) -> mpsc::Receiver<DirEntry> {
+    let (tx, rx) = mpsc::channel::<DirEntry>();
     crossbeam::scope(|scope| {
         scope.spawn(|| {
             let walker = WalkDir::new(path).into_iter();
@@ -66,10 +64,10 @@ fn get_gitdir<'a>(path: String) -> mpsc::Receiver<&'a Path> {
     return rx;
 }
 
-impl<'a> Gsr<'a> {
-    pub fn new<S: AsRef<OsStr> + ?Sized>(s: &'a S) -> Self {
+impl Gsr {
+    pub fn new(e: DirEntry) -> Self {
         Gsr {
-            path: Path::new(s),
+            entry: e,
             status: None,
         }
     }
