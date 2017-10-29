@@ -1,0 +1,16 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Gsr	src/main.rs	/^impl Gsr {$/;"	i
+Gsr	src/main.rs	/^struct Gsr {$/;"	s
+Opt	src/main.rs	/^struct Opt {$/;"	s
+VERSION	src/main.rs	/^const VERSION: &str = "0.1.0";$/;"	c
+check_diff	src/main.rs	/^    pub fn check_diff(self) -> Self {$/;"	f
+get_gitdir	src/main.rs	/^fn get_gitdir(path: String) -> mpsc::Receiver<Gsr> {$/;"	f
+get_rootdir	src/main.rs	/^fn get_rootdir(input: &Option<String>) -> String {$/;"	f
+get_status	src/main.rs	/^    pub fn get_status(self) -> Self {$/;"	f
+main	src/main.rs	/^fn main() {$/;"	f
+new	src/main.rs	/^    pub fn new<P: AsRef<Path>>(p: P) -> Self {$/;"	f
