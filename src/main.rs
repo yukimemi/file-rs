@@ -3,6 +3,7 @@ extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
 extern crate walkdir;
+extern crate threadpool;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -10,15 +11,12 @@ use std::sync::mpsc;
 use std::thread;
 use structopt::StructOpt;
 use walkdir::WalkDir;
+use threadpool::ThreadPool;
 
-const VERSION: &str = "0.1.0";
+const WORKERS: usize = 8;
 
 #[derive(StructOpt, Debug)]
 struct Opt {
-    // A flag, true if used in the command line.
-    #[structopt(short = "v", long = "version", help = "Show version")]
-    version: bool,
-
     #[structopt(short = "a", long = "all", help = "Print all git directory")]
     all: bool,
 
@@ -108,23 +106,31 @@ impl Gsr {
 fn main() {
     let opt = Opt::from_args();
 
-    if opt.version {
-        println!("{}", VERSION);
-        return;
-    }
-
+    let pool = ThreadPool::new(WORKERS);
     let walk_dir = get_rootdir(&opt.input);
 
     let rx = get_gitdir(walk_dir);
+    let (tx_, rx_) = mpsc::channel::<Gsr>();
     rx.into_iter()
         .map(|gsr| {
-            let gsr = gsr.get_status().check_diff();
-            if opt.all {
+            let tx_ = tx_.clone();
+            pool.execute(move || {
+                let gsr = gsr.get_status().check_diff();
+                tx_.send(gsr).unwrap();
+            });
+        })
+        .collect::<Vec<_>>();
+
+    // Wait all threads.
+    pool.join();
+    drop(tx_);
+
+    rx_.into_iter()
+        .map(|gsr| if opt.all {
+            println!("{}", gsr.pb.display());
+        } else {
+            if gsr.df {
                 println!("{}", gsr.pb.display());
-            } else {
-                if gsr.df {
-                    println!("{}", gsr.pb.display());
-                }
             }
         })
         .collect::<Vec<_>>();

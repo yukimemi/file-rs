@@ -7,7 +7,7 @@
 Gsr	src/main.rs	/^impl Gsr {$/;"	i
 Gsr	src/main.rs	/^struct Gsr {$/;"	s
 Opt	src/main.rs	/^struct Opt {$/;"	s
-VERSION	src/main.rs	/^const VERSION: &str = "0.1.0";$/;"	c
+WORKERS	src/main.rs	/^const WORKERS: usize = 8;$/;"	c
 check_diff	src/main.rs	/^    pub fn check_diff(self) -> Self {$/;"	f
 get_gitdir	src/main.rs	/^fn get_gitdir(walk_dir: WalkDir) -> mpsc::Receiver<Gsr> {$/;"	f
 get_rootdir	src/main.rs	/^fn get_rootdir(input: &Option<String>) -> WalkDir {$/;"	f

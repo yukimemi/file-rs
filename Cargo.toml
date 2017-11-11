@@ -1,9 +1,10 @@
 [package]
 authors = ["yukimemi <yukimemi@gmail.com>"]
 name = "gsr"
-version = "0.1.0"
+version = "0.1.1"
 
 [dependencies]
 structopt = "0.1.4"
 structopt-derive = "0.1.4"
+threadpool = "1.7.1"
 walkdir = "2.0.1"
