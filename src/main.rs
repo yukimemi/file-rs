@@ -58,21 +58,31 @@ fn get_rootdir(input: &Option<String>) -> WalkDir {
     }
 }
 
-fn get_gitdir(walk_dir: WalkDir) -> mpsc::Receiver<Gsr> {
+fn get_gsrs(walk_dir: WalkDir, fetch: bool) -> mpsc::Receiver<Gsr> {
     let (tx, rx) = mpsc::channel::<Gsr>();
+    let pool = ThreadPool::new(WORKERS);
     thread::spawn(move || {
         walk_dir
             .into_iter()
             .map(|e| match e {
                 Ok(e) => {
                     if e.file_name().to_str().unwrap_or("").eq(".git") {
-                        let parent = e.path().parent().unwrap();
-                        tx.send(Gsr::new(parent)).unwrap();
+                        let tx = tx.clone();
+                        pool.execute(move || {
+                            let parent = e.path().parent().unwrap();
+                            let gsr = Gsr::new(parent);
+                            if fetch {
+                                gsr.fetch();
+                            }
+                            let gsr = gsr.status().diff().is_ahead().is_behind();
+                            tx.send(gsr).unwrap();
+                        });
                     }
                 }
                 Err(e) => eprintln!("{}", e),
             })
             .collect::<Vec<_>>();
+        pool.join();
         drop(tx);
     });
     rx
@@ -152,33 +162,12 @@ impl Gsr {
 fn main() {
     let opt = Opt::from_args();
 
-    let pool = ThreadPool::new(WORKERS);
     let walk_dir = get_rootdir(&opt.input);
 
-    let gsrs = get_gitdir(walk_dir);
-    let (tx, rx) = mpsc::channel::<Gsr>();
-
-
-    // Get git status on all git directory.
     let fetch = opt.fetch;
+    let gsrs = get_gsrs(walk_dir, fetch);
+
     gsrs.into_iter()
-        .map(|gsr| {
-            let tx = tx.clone();
-            pool.execute(move || {
-                if fetch {
-                    gsr.fetch();
-                }
-                let gsr = gsr.status().diff().is_ahead().is_behind();
-                tx.send(gsr).unwrap();
-            });
-        })
-        .collect::<Vec<_>>();
-
-    // Wait all threads.
-    pool.join();
-    drop(tx);
-
-    rx.into_iter()
         .map(|gsr| if opt.all {
             println!("{}", gsr.pb.display());
         } else {

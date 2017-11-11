@@ -10,7 +10,7 @@ Opt	src/main.rs	/^struct Opt {$/;"	s
 WORKERS	src/main.rs	/^const WORKERS: usize = 8;$/;"	c
 diff	src/main.rs	/^    pub fn diff(self) -> Self {$/;"	f
 fetch	src/main.rs	/^    pub fn fetch(&self) {$/;"	f
-get_gitdir	src/main.rs	/^fn get_gitdir(walk_dir: WalkDir) -> mpsc::Receiver<Gsr> {$/;"	f
+get_gsrs	src/main.rs	/^fn get_gsrs(walk_dir: WalkDir, fetch: bool) -> mpsc::Receiver<Gsr> {$/;"	f
 get_rootdir	src/main.rs	/^fn get_rootdir(input: &Option<String>) -> WalkDir {$/;"	f
 is_ahead	src/main.rs	/^    pub fn is_ahead(self) -> Self {$/;"	f
 is_behind	src/main.rs	/^    pub fn is_behind(self) -> Self {$/;"	f
