@@ -4,6 +4,9 @@ extern crate structopt;
 extern crate structopt_derive;
 extern crate walkdir;
 extern crate threadpool;
+extern crate regex;
+#[macro_use]
+extern crate lazy_static;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -12,6 +15,7 @@ use std::thread;
 use structopt::StructOpt;
 use walkdir::WalkDir;
 use threadpool::ThreadPool;
+use regex::Regex;
 
 const WORKERS: usize = 8;
 
@@ -23,16 +27,23 @@ struct Opt {
     #[structopt(short = "f", long = "fetch", help = "Execute git fetch before check")]
     fetch: bool,
 
+    #[structopt(long = "behind", help = "Print behind repo")]
+    behind: bool,
+    #[structopt(long = "ahead", help = "Print ahead repo")]
+    ahead: bool,
+
     // Default is ghq root directory.
     #[structopt(required = false, help = "Input directory")]
     input: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Gsr {
     pb: PathBuf,
     df: bool,
     st: Option<Output>,
+    ahead: bool,
+    behind: bool,
 }
 
 fn get_rootdir(input: &Option<String>) -> WalkDir {
@@ -75,6 +86,8 @@ impl Gsr {
             pb: pb,
             df: false,
             st: None,
+            ahead: false,
+            behind: false,
         }
     }
 
@@ -112,6 +125,28 @@ impl Gsr {
             .output()
             .expect("failed to execute process");
     }
+
+    pub fn is_ahead(self) -> Self {
+        lazy_static! { static ref RE: Regex = Regex::new(r"\[.*ahead.*\]").unwrap(); }
+        if let Some(ref out) = self.st {
+            return Gsr {
+                ahead: RE.is_match(&String::from_utf8_lossy(&out.stdout).to_string()),
+                ..self.clone()
+            };
+        }
+        self
+    }
+
+    pub fn is_behind(self) -> Self {
+        lazy_static! { static ref RE: Regex = Regex::new(r"\[.*behind.*\]").unwrap(); }
+        if let Some(ref out) = self.st {
+            return Gsr {
+                behind: RE.is_match(&String::from_utf8_lossy(&out.stdout).to_string()),
+                ..self.clone()
+            };
+        }
+        self
+    }
 }
 
 fn main() {
@@ -123,6 +158,7 @@ fn main() {
     let gsrs = get_gitdir(walk_dir);
     let (tx, rx) = mpsc::channel::<Gsr>();
 
+
     // Get git status on all git directory.
     let fetch = opt.fetch;
     gsrs.into_iter()
@@ -132,7 +168,7 @@ fn main() {
                 if fetch {
                     gsr.fetch();
                 }
-                let gsr = gsr.status().diff();
+                let gsr = gsr.status().diff().is_ahead().is_behind();
                 tx.send(gsr).unwrap();
             });
         })
@@ -147,6 +183,10 @@ fn main() {
             println!("{}", gsr.pb.display());
         } else {
             if gsr.df {
+                println!("{}", gsr.pb.display());
+            } else if opt.ahead && gsr.ahead {
+                println!("{}", gsr.pb.display());
+            } else if opt.behind && gsr.behind {
                 println!("{}", gsr.pb.display());
             }
         })

@@ -1,9 +1,11 @@
 [package]
 authors = ["yukimemi <yukimemi@gmail.com>"]
 name = "gsr"
-version = "0.1.1"
+version = "0.2.0"
 
 [dependencies]
+lazy_static = "0.2.9"
+regex = "0.2.2"
 structopt = "0.1.4"
 structopt-derive = "0.1.4"
 threadpool = "1.7.1"
