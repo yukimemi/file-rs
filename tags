@@ -12,6 +12,8 @@ diff	src/main.rs	/^    pub fn diff(self) -> Self {$/;"	f
 fetch	src/main.rs	/^    pub fn fetch(&self) {$/;"	f
 get_gitdir	src/main.rs	/^fn get_gitdir(walk_dir: WalkDir) -> mpsc::Receiver<Gsr> {$/;"	f
 get_rootdir	src/main.rs	/^fn get_rootdir(input: &Option<String>) -> WalkDir {$/;"	f
+is_ahead	src/main.rs	/^    pub fn is_ahead(self) -> Self {$/;"	f
+is_behind	src/main.rs	/^    pub fn is_behind(self) -> Self {$/;"	f
 main	src/main.rs	/^fn main() {$/;"	f
 new	src/main.rs	/^    pub fn new<P: AsRef<Path>>(p: P) -> Self {$/;"	f
 status	src/main.rs	/^    pub fn status(self) -> Self {$/;"	f
