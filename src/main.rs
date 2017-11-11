@@ -20,6 +20,9 @@ struct Opt {
     #[structopt(short = "a", long = "all", help = "Print all git directory")]
     all: bool,
 
+    #[structopt(short = "f", long = "fetch", help = "Execute git fetch before check")]
+    fetch: bool,
+
     // Default is ghq root directory.
     #[structopt(required = false, help = "Input directory")]
     input: Option<String>,
@@ -75,7 +78,7 @@ impl Gsr {
         }
     }
 
-    pub fn check_diff(self) -> Self {
+    pub fn diff(self) -> Self {
         let df = Command::new("git")
             .current_dir(&self.pb)
             .arg("diff")
@@ -88,7 +91,7 @@ impl Gsr {
         }
     }
 
-    pub fn get_status(self) -> Self {
+    pub fn status(self) -> Self {
         let st = Command::new("git")
             .current_dir(&self.pb)
             .arg("status")
@@ -101,6 +104,14 @@ impl Gsr {
             ..self
         }
     }
+
+    pub fn fetch(&self) {
+        Command::new("git")
+            .current_dir(&self.pb)
+            .arg("fetch")
+            .output()
+            .expect("failed to execute process");
+    }
 }
 
 fn main() {
@@ -109,23 +120,29 @@ fn main() {
     let pool = ThreadPool::new(WORKERS);
     let walk_dir = get_rootdir(&opt.input);
 
-    let rx = get_gitdir(walk_dir);
-    let (tx_, rx_) = mpsc::channel::<Gsr>();
-    rx.into_iter()
+    let gsrs = get_gitdir(walk_dir);
+    let (tx, rx) = mpsc::channel::<Gsr>();
+
+    // Get git status on all git directory.
+    let fetch = opt.fetch;
+    gsrs.into_iter()
         .map(|gsr| {
-            let tx_ = tx_.clone();
+            let tx = tx.clone();
             pool.execute(move || {
-                let gsr = gsr.get_status().check_diff();
-                tx_.send(gsr).unwrap();
+                if fetch {
+                    gsr.fetch();
+                }
+                let gsr = gsr.status().diff();
+                tx.send(gsr).unwrap();
             });
         })
         .collect::<Vec<_>>();
 
     // Wait all threads.
     pool.join();
-    drop(tx_);
+    drop(tx);
 
-    rx_.into_iter()
+    rx.into_iter()
         .map(|gsr| if opt.all {
             println!("{}", gsr.pb.display());
         } else {
