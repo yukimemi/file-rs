@@ -34,50 +34,23 @@ struct Gsr {
     st: Option<Output>,
 }
 
-fn main() {
-    let opt = Opt::from_args();
-
-    if opt.version {
-        println!("{}", VERSION);
-        return;
-    }
-
-    let input = get_rootdir(&opt.input);
-
-    let rx = get_gitdir(input);
-    rx.into_iter()
-        .map(|gsr| {
-            let gsr = gsr.get_status().check_diff();
-            if opt.all {
-                println!("{}", gsr.pb.display());
-            } else {
-                if gsr.df {
-                    println!("{}", gsr.pb.display());
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-}
-
-fn get_rootdir(input: &Option<String>) -> String {
+fn get_rootdir(input: &Option<String>) -> WalkDir {
     match *input {
-        Some(ref inp) => inp.to_string(),
+        Some(ref inp) => WalkDir::new(inp),
         None => {
             if let Ok(out) = Command::new("ghq").arg("root").output() {
-                return String::from_utf8_lossy(&out.stdout)
-                    .trim_right()
-                    .to_string();
+                return WalkDir::new(String::from_utf8_lossy(&out.stdout).trim_right());
             }
-            ".".to_string()
+            WalkDir::new(".")
         }
     }
 }
 
-fn get_gitdir(path: String) -> mpsc::Receiver<Gsr> {
+fn get_gitdir(walk_dir: WalkDir) -> mpsc::Receiver<Gsr> {
     let (tx, rx) = mpsc::channel::<Gsr>();
-    thread::spawn(|| {
-        let walker = WalkDir::new(path).into_iter();
-        walker
+    thread::spawn(move || {
+        walk_dir
+            .into_iter()
             .map(|e| match e {
                 Ok(e) => {
                     if e.file_name().to_str().unwrap_or("").eq(".git") {
@@ -85,7 +58,7 @@ fn get_gitdir(path: String) -> mpsc::Receiver<Gsr> {
                         tx.send(Gsr::new(parent)).unwrap();
                     }
                 }
-                Err(e) => println!("{}", e),
+                Err(e) => eprintln!("{}", e),
             })
             .collect::<Vec<_>>();
         drop(tx);
@@ -130,4 +103,29 @@ impl Gsr {
             ..self
         }
     }
+}
+
+fn main() {
+    let opt = Opt::from_args();
+
+    if opt.version {
+        println!("{}", VERSION);
+        return;
+    }
+
+    let walk_dir = get_rootdir(&opt.input);
+
+    let rx = get_gitdir(walk_dir);
+    rx.into_iter()
+        .map(|gsr| {
+            let gsr = gsr.get_status().check_diff();
+            if opt.all {
+                println!("{}", gsr.pb.display());
+            } else {
+                if gsr.df {
+                    println!("{}", gsr.pb.display());
+                }
+            }
+        })
+        .collect::<Vec<_>>();
 }

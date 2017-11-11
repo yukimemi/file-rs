@@ -9,8 +9,8 @@ Gsr	src/main.rs	/^struct Gsr {$/;"	s
 Opt	src/main.rs	/^struct Opt {$/;"	s
 VERSION	src/main.rs	/^const VERSION: &str = "0.1.0";$/;"	c
 check_diff	src/main.rs	/^    pub fn check_diff(self) -> Self {$/;"	f
-get_gitdir	src/main.rs	/^fn get_gitdir(path: String) -> mpsc::Receiver<Gsr> {$/;"	f
-get_rootdir	src/main.rs	/^fn get_rootdir(input: &Option<String>) -> String {$/;"	f
+get_gitdir	src/main.rs	/^fn get_gitdir(walk_dir: WalkDir) -> mpsc::Receiver<Gsr> {$/;"	f
+get_rootdir	src/main.rs	/^fn get_rootdir(input: &Option<String>) -> WalkDir {$/;"	f
 get_status	src/main.rs	/^    pub fn get_status(self) -> Self {$/;"	f
 main	src/main.rs	/^fn main() {$/;"	f
 new	src/main.rs	/^    pub fn new<P: AsRef<Path>>(p: P) -> Self {$/;"	f
