@@ -33,7 +33,7 @@ struct Opt {
     ahead: bool,
 
     // Default is ghq root directory.
-    #[structopt(required = false, help = "Input directory")]
+    #[structopt(required = false, help = "Input directory. default is $(ghq root) or '.'")]
     input: Option<String>,
 }
 
