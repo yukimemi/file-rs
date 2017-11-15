@@ -19,7 +19,7 @@ use regex::Regex;
 
 const WORKERS: usize = 8;
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Clone)]
 struct Opt {
     #[structopt(short = "a", long = "all", help = "Print all git directory")]
     all: bool,
@@ -31,6 +31,9 @@ struct Opt {
     behind: bool,
     #[structopt(long = "ahead", help = "Print ahead repo")]
     ahead: bool,
+
+    #[structopt(long = "pull", help = "Git pull all git repository")]
+    pull: bool,
 
     // Default is ghq root directory.
     #[structopt(required = false, help = "Input directory. default is $(ghq root) or '.'")]
@@ -58,9 +61,10 @@ fn get_rootdir(input: &Option<String>) -> WalkDir {
     }
 }
 
-fn get_gsrs(walk_dir: WalkDir, fetch: bool) -> mpsc::Receiver<Gsr> {
+fn get_gsrs(walk_dir: WalkDir, opt: &Opt) -> mpsc::Receiver<Gsr> {
     let (tx, rx) = mpsc::channel::<Gsr>();
     let pool = ThreadPool::new(WORKERS);
+    let opt = opt.clone();
     thread::spawn(move || {
         walk_dir
             .into_iter()
@@ -68,11 +72,15 @@ fn get_gsrs(walk_dir: WalkDir, fetch: bool) -> mpsc::Receiver<Gsr> {
                 Ok(e) => {
                     if e.file_name().to_str().unwrap_or("").eq(".git") {
                         let tx = tx.clone();
+                        let opt = opt.clone();
                         pool.execute(move || {
                             let parent = e.path().parent().unwrap();
                             let gsr = Gsr::new(parent);
-                            if fetch {
+                            if opt.fetch {
                                 gsr.fetch();
+                            }
+                            if opt.pull {
+                                gsr.pull();
                             }
                             let gsr = gsr.status().diff().is_ahead().is_behind();
                             tx.send(gsr).unwrap();
@@ -136,6 +144,14 @@ impl Gsr {
             .expect("failed to execute process");
     }
 
+    pub fn pull(&self) {
+        Command::new("git")
+            .current_dir(&self.pb)
+            .arg("pull")
+            .output()
+            .expect("failed to execute process");
+    }
+
     pub fn is_ahead(self) -> Self {
         lazy_static! { static ref RE: Regex = Regex::new(r"\[.*ahead.*\]").unwrap(); }
         if let Some(ref out) = self.st {
@@ -164,8 +180,7 @@ fn main() {
 
     let walk_dir = get_rootdir(&opt.input);
 
-    let fetch = opt.fetch;
-    let gsrs = get_gsrs(walk_dir, fetch);
+    let gsrs = get_gsrs(walk_dir, &opt);
 
     gsrs.into_iter()
         .map(|gsr| if opt.all {
