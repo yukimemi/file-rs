@@ -30,6 +30,9 @@ struct Opt {
     #[structopt(short = "p", long = "pull", help = "Git pull all git repository")]
     pull: bool,
 
+    #[structopt(short = "s", long = "status", help = "Git status all git repository")]
+    status: bool,
+
     #[structopt(long = "behind", help = "Print behind repo")]
     behind: bool,
     #[structopt(long = "ahead", help = "Print ahead repo")]
@@ -152,6 +155,16 @@ impl Gsr {
             .expect("failed to execute process");
     }
 
+    pub fn print_status(&self) {
+        if let Some(ref out) = self.st {
+            println!(
+                "{}\n{}",
+                self.pb.display(),
+                String::from_utf8_lossy(&out.stdout)
+            );
+        }
+    }
+
     pub fn is_ahead(self) -> Self {
         lazy_static! { static ref RE: Regex = Regex::new(r"\[.*ahead.*\]").unwrap(); }
         if let Some(ref out) = self.st {
@@ -175,6 +188,14 @@ impl Gsr {
     }
 }
 
+fn print_gsr(gsr: &Gsr, opt: &Opt) {
+    if opt.status {
+        gsr.print_status();
+    } else {
+        println!("{}", gsr.pb.display());
+    }
+}
+
 fn main() {
     let opt = Opt::from_args();
 
@@ -184,14 +205,14 @@ fn main() {
 
     gsrs.into_iter()
         .map(|gsr| if opt.all {
-            println!("{}", gsr.pb.display());
+            print_gsr(&gsr, &opt);
         } else {
             if gsr.df {
-                println!("{}", gsr.pb.display());
+                print_gsr(&gsr, &opt);
             } else if opt.ahead && gsr.ahead {
-                println!("{}", gsr.pb.display());
+                print_gsr(&gsr, &opt);
             } else if opt.behind && gsr.behind {
-                println!("{}", gsr.pb.display());
+                print_gsr(&gsr, &opt);
             }
         })
         .collect::<Vec<_>>();
