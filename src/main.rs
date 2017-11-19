@@ -27,13 +27,13 @@ struct Opt {
     #[structopt(short = "f", long = "fetch", help = "Execute git fetch before check")]
     fetch: bool,
 
+    #[structopt(short = "p", long = "pull", help = "Git pull all git repository")]
+    pull: bool,
+
     #[structopt(long = "behind", help = "Print behind repo")]
     behind: bool,
     #[structopt(long = "ahead", help = "Print ahead repo")]
     ahead: bool,
-
-    #[structopt(long = "pull", help = "Git pull all git repository")]
-    pull: bool,
 
     // Default is ghq root directory.
     #[structopt(required = false, help = "Input directory. default is $(ghq root) or '.'")]
