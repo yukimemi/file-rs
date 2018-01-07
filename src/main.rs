@@ -9,9 +9,10 @@ extern crate regex;
 extern crate lazy_static;
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::{self, Command, Output};
 use std::sync::mpsc;
 use std::thread;
+use std::io::{self, Write};
 use structopt::StructOpt;
 use walkdir::WalkDir;
 use threadpool::ThreadPool;
@@ -157,11 +158,15 @@ impl Gsr {
 
     pub fn print_status(&self) {
         if let Some(ref out) = self.st {
-            println!(
+            let r = writeln!(
+                &mut io::stdout(),
                 "{}\n{}",
                 self.pb.display(),
                 String::from_utf8_lossy(&out.stdout)
             );
+            if r.is_err() {
+                process::exit(0);
+            }
         }
     }
 
@@ -192,7 +197,11 @@ fn print_gsr(gsr: &Gsr, opt: &Opt) {
     if opt.status {
         gsr.print_status();
     } else {
-        println!("{}", gsr.pb.display());
+        let r = writeln!(&mut io::stdout(), "{}", gsr.pb.display());
+        if r.is_err() {
+            // Probably a broken pipe. Exit gracefully.
+            process::exit(0);
+        }
     }
 }
 
