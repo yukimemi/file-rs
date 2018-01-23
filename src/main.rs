@@ -1,12 +1,12 @@
 #![feature(attr_literals)]
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
-extern crate walkdir;
 extern crate threadpool;
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
+extern crate walkdir;
 
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, Output};
@@ -58,7 +58,7 @@ fn get_rootdir(input: &Option<String>) -> WalkDir {
         Some(ref inp) => WalkDir::new(inp),
         None => {
             if let Ok(out) = Command::new("ghq").arg("root").output() {
-                return WalkDir::new(String::from_utf8_lossy(&out.stdout).trim_right());
+                return WalkDir::new(String::from_utf8_lossy(&out.stdout).trim_right()).max_depth(4);
             }
             WalkDir::new(".")
         }
@@ -213,15 +213,17 @@ fn main() {
     let gsrs = get_gsrs(walk_dir, &opt);
 
     gsrs.into_iter()
-        .map(|gsr| if opt.all {
-            print_gsr(&gsr, &opt);
-        } else {
-            if gsr.df {
+        .map(|gsr| {
+            if opt.all {
                 print_gsr(&gsr, &opt);
-            } else if opt.ahead && gsr.ahead {
-                print_gsr(&gsr, &opt);
-            } else if opt.behind && gsr.behind {
-                print_gsr(&gsr, &opt);
+            } else {
+                if gsr.df {
+                    print_gsr(&gsr, &opt);
+                } else if opt.ahead && gsr.ahead {
+                    print_gsr(&gsr, &opt);
+                } else if opt.behind && gsr.behind {
+                    print_gsr(&gsr, &opt);
+                }
             }
         })
         .collect::<Vec<_>>();
