@@ -8,15 +8,15 @@ extern crate structopt_derive;
 extern crate threadpool;
 extern crate walkdir;
 
+use regex::Regex;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, Output};
 use std::sync::mpsc;
 use std::thread;
-use std::io::{self, Write};
 use structopt::StructOpt;
-use walkdir::WalkDir;
 use threadpool::ThreadPool;
-use regex::Regex;
+use walkdir::WalkDir;
 
 const WORKERS: usize = 8;
 
@@ -171,7 +171,9 @@ impl Gsr {
     }
 
     pub fn is_ahead(self) -> Self {
-        lazy_static! { static ref RE: Regex = Regex::new(r"\[.*ahead.*\]").unwrap(); }
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"\[.*ahead.*\]").unwrap();
+        }
         if let Some(ref out) = self.st {
             return Gsr {
                 ahead: RE.is_match(&String::from_utf8_lossy(&out.stdout).to_string()),
@@ -182,7 +184,9 @@ impl Gsr {
     }
 
     pub fn is_behind(self) -> Self {
-        lazy_static! { static ref RE: Regex = Regex::new(r"\[.*behind.*\]").unwrap(); }
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"\[.*behind.*\]").unwrap();
+        }
         if let Some(ref out) = self.st {
             return Gsr {
                 behind: RE.is_match(&String::from_utf8_lossy(&out.stdout).to_string()),
@@ -209,7 +213,6 @@ fn main() {
     let opt = Opt::from_args();
 
     let walk_dir = get_rootdir(&opt.input);
-
     let gsrs = get_gsrs(walk_dir, &opt);
 
     gsrs.into_iter()
